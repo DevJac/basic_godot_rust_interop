@@ -1,8 +1,8 @@
 mod bindings;
 
 use std::ffi::{c_void, CString};
-use std::mem::{size_of, MaybeUninit};
-use std::os::raw::c_int;
+use std::mem::MaybeUninit;
+use std::os::raw::{c_char, c_int};
 use std::ptr;
 
 static mut API: *const bindings::godot_gdnative_core_api_struct = ptr::null();
@@ -75,17 +75,14 @@ pub unsafe extern "C" fn godot_nativescript_init(p_handle: *mut c_void) {
     );
 }
 
-#[repr(C)]
-pub struct UserData {
-    data: CString,
-}
-
 pub unsafe extern "C" fn simple_constructor(
     _p_instance: *mut bindings::godot_object,
     _p_method_data: *mut c_void,
 ) -> *mut c_void {
-    let user_data = (*API).godot_alloc.unwrap()(size_of::<UserData>() as i32);
-    (*(user_data as *mut UserData)).data = CString::new("Hello from Rust!\n").unwrap();
+    let hello_cstr = CString::new("Hello from Rust!").unwrap();
+    assert!(hello_cstr.as_bytes_with_nul().len() == 17);
+    let user_data = (*API).godot_alloc.unwrap()(17);
+    (user_data as *mut c_char).copy_from(hello_cstr.as_ptr(), 17);
     user_data
 }
 
@@ -104,11 +101,11 @@ pub unsafe extern "C" fn simple_get_data(
     _p_num_args: c_int,
     _p_args: *mut *mut bindings::godot_variant,
 ) -> bindings::godot_variant {
-    let user_data = p_user_data as *mut UserData;
+    let user_data = p_user_data as *const c_char;
     let mut data = MaybeUninit::<bindings::godot_string>::uninit();
     let mut ret = MaybeUninit::<bindings::godot_variant>::uninit();
     (*API).godot_string_new.unwrap()(data.as_mut_ptr());
-    (*API).godot_string_parse_utf8.unwrap()(data.as_mut_ptr(), (*user_data).data.as_ptr());
+    (*API).godot_string_parse_utf8.unwrap()(data.as_mut_ptr(), user_data);
     (*API).godot_variant_new_string.unwrap()(ret.as_mut_ptr(), data.as_mut_ptr());
     (*API).godot_string_destroy.unwrap()(data.as_mut_ptr());
     ret.assume_init()
