@@ -9,6 +9,7 @@ static mut API: *const bindings::godot_gdnative_core_api_struct = ptr::null();
 static mut NATIVESCRIPT_API: *const bindings::godot_gdnative_ext_nativescript_api_struct =
     ptr::null();
 
+#[no_mangle]
 pub unsafe extern "C" fn godot_gdnative_init(
     p_options: *const bindings::godot_gdnative_init_options,
 ) {
@@ -23,6 +24,7 @@ pub unsafe extern "C" fn godot_gdnative_init(
     }
 }
 
+#[no_mangle]
 pub unsafe extern "C" fn godot_gdnative_terminate(
     _p_options: *const bindings::godot_gdnative_terminate_options,
 ) {
@@ -30,6 +32,7 @@ pub unsafe extern "C" fn godot_gdnative_terminate(
     NATIVESCRIPT_API = ptr::null();
 }
 
+#[no_mangle]
 pub unsafe extern "C" fn godot_nativescript_init(p_handle: *mut c_void) {
     let create = bindings::godot_instance_create_func {
         create_func: Some(simple_constructor),
